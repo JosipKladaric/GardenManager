@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Garden Manager & Designer — plan your garden layout with companion planting heatmaps, keyhole raised beds, growth timelines, and smart auto-design." />
+  <title>Garden Manager — Smart Garden Designer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header id="topbar">
+    <a class="logo" href="#">
+      <span class="logo-icon">🌿</span>
+      <span class="logo-text">GardenManager</span>
+    </a>
+    <div class="topbar-divider"></div>
+    <div class="dim-inputs">
+      <label for="input-width">Width</label>
+      <input id="input-width"  type="number" value="10" min="1" max="100" step="0.5" />
+      <span class="dim-x">×</span>
+      <input id="input-height" type="number" value="8"  min="1" max="100" step="0.5" />
+      <label for="input-height" style="margin-left:-4px">m</label>
+      <button id="btn-apply-dims">Apply</button>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="kh-toolbar">
+      <button id="btn-add-keyhole" class="kh-add-btn" title="Add a keyhole raised bed (K)">🔑 Add Keyhole Bed</button>
+      <div class="kh-size-inline" id="kh-size-wrap" style="display:none">
+        <label for="kh-radius-slider" style="font-size:11px;color:var(--text-muted)">Size</label>
+        <input id="kh-radius-slider" type="range" min="0.5" max="3.5" step="0.1" value="1.2" style="width:80px" />
+        <span id="kh-radius-val" style="font-size:12px;font-weight:600;color:var(--accent);min-width:54px">⌀ 2.4 m</span>
+        <span style="font-size:11px;color:var(--text-dim)">ESC to cancel</span>
+      </div>
+      <button id="btn-draw-obstacle" class="obs-btn" title="Draw an unusable area (path, shed, pond…)">⛔ Draw Obstacle</button>
+      <button id="btn-design-garden" class="garden-design-btn" title="Auto-design the whole garden">🧩 Auto-Design Garden</button>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="info-pill"><span>🌱</span> <strong id="plant-count">0</strong> plants</div>
+    <div class="info-pill"><span>🔑</span> <strong id="keyhole-count">0</strong> beds</div>
+    <div class="info-pill"><span>📐</span> <strong id="area-display">80</strong> m²</div>
+    <button id="btn-clear-all" title="Clear all plants and keyhole beds">🗑 Clear All</button>
+  </header>
+
+  <!-- CANVAS AREA -->
+  <main id="canvas-area">
+    <canvas id="garden-canvas"></canvas>
+    <canvas id="heatmap-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+
+    <div class="view-label">🖱 Click to place · Right-click to remove · K = add keyhole · 🧩 = auto-design</div>
+
+    <div class="zoom-controls">
+      <button class="zoom-btn" id="btn-zoom-in">+</button>
+      <button class="zoom-btn" id="btn-zoom-out">−</button>
+      <button class="zoom-btn" id="btn-zoom-fit" style="font-size:13px">⛶</button>
+    </div>
+
+    <div id="heatmap-legend">
+      <h4>Placement Guide</h4>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(147,197,255,0.8)"></div>Companion synergy</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(74,222,128,0.7)"></div>Optimal spot</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(251,191,36,0.7)"></div>Acceptable</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(245,158,11,0.65)"></div>Crowded / neutral</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:rgba(239,68,68,0.8)"></div>Too close / antagonist</div>
+      <div class="legend-note">Ghost ring = live cursor score<br>🔑 Raised beds score higher</div>
+    </div>
+
+    <div id="plant-tooltip">
+      <h4 id="tt-name">—</h4>
+      <p  id="tt-info">—</p>
+      <span class="stage-badge" id="tt-stage">—</span>
+    </div>
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h2>🌿 Plant Palette</h2>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="spring">🌸 Spring</button>
+        <button class="filter-btn" data-filter="summer">☀️ Summer</button>
+        <button class="filter-btn" data-filter="fall">🍂 Fall</button>
+      </div>
+    </div>
+    <div class="plant-search">
+      <span class="search-icon">🔍</span>
+      <input id="plant-search-input" type="text" placeholder="Search plants…" />
+    </div>
+    <div id="plant-list"></div>
+
+    <div class="kh-list-panel">
+      <h3>🔑 Keyhole Beds <span style="font-size:10px;font-weight:400;color:var(--text-dim)">(🧩 to auto-design)</span></h3>
+      <div id="keyhole-bed-list"><div class="kh-empty">No beds placed yet</div></div>
+    </div>
+
+    <div id="companion-panel">
+      <h3>Plant Details</h3>
+      <div id="no-selection-hint">Select a plant to see companion info &amp; place it in the garden.</div>
+      <div id="selection-details" style="display:none">
+        <div class="companion-selected-name">
+          <span id="sel-icon"></span>
+          <span id="sel-name"></span>
+        </div>
+        <div class="comp-row" id="sel-companions"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- TIMELINE -->
+  <footer id="timeline">
+    <div class="tl-season-strip">
+      <div class="season-seg spring"></div>
+      <div class="season-seg summer"></div>
+      <div class="season-seg fall"></div>
+      <div class="season-seg winter"></div>
+    </div>
+    <div class="timeline-top">
+      <div id="tl-date-display">Day 1 — Jan 1</div>
+      <div class="tl-season-badge spring" id="tl-season-badge">🌸 Spring</div>
+      <div class="tl-spacer"></div>
+      <div class="tl-controls">
+        <button class="tl-btn" id="tl-prev">⏮</button>
+        <button class="tl-btn" id="tl-play">▶</button>
+        <button class="tl-btn" id="tl-next">⏭</button>
+        <select class="tl-speed-select" id="tl-speed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+          <option value="8">8×</option>
+        </select>
+      </div>
+    </div>
+    <div class="tl-months">
+      <div class="tl-month-label">Jan</div><div class="tl-month-label">Feb</div>
+      <div class="tl-month-label">Mar</div><div class="tl-month-label">Apr</div>
+      <div class="tl-month-label">May</div><div class="tl-month-label">Jun</div>
+      <div class="tl-month-label">Jul</div><div class="tl-month-label">Aug</div>
+      <div class="tl-month-label">Sep</div><div class="tl-month-label">Oct</div>
+      <div class="tl-month-label">Nov</div><div class="tl-month-label">Dec</div>
+    </div>
+    <div class="tl-slider-wrap">
+      <input type="range" id="tl-slider" min="1" max="365" value="1" step="1" />
+    </div>
+  </footer>
+</div>
+
+<!-- Context menu -->
+<div id="context-menu">
+  <div class="ctx-item" id="ctx-info">ℹ️ Plant Info</div>
+  <div class="ctx-item danger" id="ctx-remove-plant">🗑 Remove Plant</div>
+  <div class="ctx-item" id="ctx-design-keyhole">🧩 Auto-Design This Bed</div>
+  <div class="ctx-item danger" id="ctx-remove-keyhole">🗑 Remove Keyhole Bed</div>
+  <div class="ctx-item danger" id="ctx-remove-obstacle">🗑 Remove Obstacle</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Load order: data → core → score → render → ui → interact → optimizer → app -->
+<script src="plants.js?v=2"></script>
+<script src="core.js?v=2"></script>
+<script src="score.js?v=2"></script>
+<script src="render.js?v=2"></script>
+<script src="ui.js?v=2"></script>
+<script src="interact.js?v=2"></script>
+<script src="optimizer.js?v=2"></script>
+<script src="app.js?v=2"></script>
+</body>
+</html>
