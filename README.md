@@ -13,21 +13,6 @@ A smart garden layout designer for GitHub Pages. Plan your garden with companion
 | 🔍 Zoom & pan | Mouse wheel to zoom, Alt+drag or middle-drag to pan |
 | 🐝 Companion scoring | Each plant scored for yield, pollinator attraction, companions & antagonists |
 
-## Running Locally
-
-Double-click **`serve.bat`** — it will auto-detect Python or Node and open the app in your browser.
-
-```
-http://localhost:8080
-```
-
-## GitHub Pages Deployment
-
-1. Push this entire folder to a GitHub repository
-2. Go to **Settings → Pages**
-3. Set Source to **Deploy from a branch → main → / (root)**
-4. Your garden will be live at `https://<username>.github.io/<repo>`
-
 ## Controls
 
 | Input | Action |
@@ -50,14 +35,4 @@ The heatmap uses a scoring function that evaluates:
 - **Antagonists** — nearby enemies reduce score (red aura)
 - **Pollinator attraction** — high-pollinator companions increase yield zones
 
-## File Structure
-
-```
-GardenManager/
-├── index.html   — App shell
-├── styles.css   — Dark-mode premium UI
-├── plants.js    — Plant database (16 species)
-├── app.js       — Canvas engine, heatmap, timeline
-├── serve.bat    — Local dev server
-└── README.md
 ```
